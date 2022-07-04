@@ -7,7 +7,7 @@ from datetime import datetime
 
 import torch
 
-from mail import MailSend
+from utils import MailSend
 from kdTrain import train
 from args import get_argparser
 import utils

@@ -1,0 +1,110 @@
+{
+    "default_path": "/mnt/server5/sdi",
+    "current_time": "Jul04_17-24-31",
+    "Tlog_dir": "/",
+    "save_log": true,
+    "t_model": "unet_rgb",
+    "s_model": "unet_rgb",
+    "t_model_params": "/",
+    "separable_conv": false,
+    "output_stride": 16,
+    "t_separable_conv": false,
+    "t_output_stride": 16,
+    "num_workers": 12,
+    "data_root": "/mnt/server5/sdi/datasets",
+    "dataset": "CPN_six",
+    "num_classes": 2,
+    "is_rgb": true,
+    "k_fold": 5,
+    "resize": [
+        496,
+        468
+    ],
+    "crop_size": [
+        512,
+        448
+    ],
+    "val_crop_size": [
+        512,
+        448
+    ],
+    "scale_factor": 0.5,
+    "random_seed": 1,
+    "gpus": "6,7",
+    "total_itrs": 2500,
+    "lr": 0.1,
+    "loss_type": "dice_loss",
+    "optim": "SGD",
+    "lr_policy": "step",
+    "step_size": 100,
+    "weight_decay": 0.0005,
+    "momentum": 0.9,
+    "batch_size": 16,
+    "exp_itr": 2,
+    "alpha": 0.5,
+    "T": 3,
+    "std": 0.01,
+    "patience": 100,
+    "delta": 0.001,
+    "val_interval": 1,
+    "val_batch_size": 4,
+    "val_std": 0.01,
+    "test_interval": 1,
+    "test_batch_size": 4,
+    "save_model": false,
+    "save_ckpt": null,
+    "val_results": false,
+    "val_results_dir": "/",
+    "ckpt": null,
+    "continue_training": false,
+    "login_dir": "/mnt/server5/sdi/login.json",
+    "cur_work_server": "server3",
+    "run_demo": false,
+    "0": {
+        "Model": "deeplabv3plus_resnet101",
+        "F1-0": "0.9",
+        "F1-1": "0.1"
+    },
+    "1": {
+        "Model": "deeplabv3plus_resnet101",
+        "F1-0": "0.9",
+        "F1-1": "0.1"
+    },
+    "2": {
+        "Model": "deeplabv3plus_resnet101",
+        "F1-0": "0.9",
+        "F1-1": "0.1"
+    },
+    "3": {
+        "Model": "deeplabv3plus_resnet101",
+        "F1-0": "0.9",
+        "F1-1": "0.1"
+    },
+    "4": {
+        "Model": "deeplabv3plus_resnet50",
+        "F1-0": "0.9",
+        "F1-1": "0.1"
+    },
+    "5": {
+        "Model": "deeplabv3plus_resnet50",
+        "F1-0": "0.9",
+        "F1-1": "0.1"
+    },
+    "6": {
+        "Model": "deeplabv3plus_resnet50",
+        "F1-0": "0.9",
+        "F1-1": "0.1"
+    },
+    "7": {
+        "Model": "deeplabv3plus_resnet50",
+        "F1-0": "0.9",
+        "F1-1": "0.1"
+    },
+    "save_Tlog": false,
+    "resume_ckpt": "/",
+    "save_val_results": false,
+    "save_test_results": false,
+    "test_results_dir": "/",
+    "best_ckpt": null,
+    "default_prefix": "/mnt/server5/sdi"
+}
