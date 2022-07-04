@@ -8,12 +8,13 @@ from email.mime.multipart import MIMEMultipart
 class MailSend(object):
 
     def __init__(self, from_addr: list = ["singkuserver@gmail.com"], 
-                to_addr: list = [],
-                subject: str = 'Testing Mail system ... Do Not reply',
+                to_addr: list = ["sdimivy014@korea.ac.kr"],
+                subject: str = "Testing Mail system ... Do Not reply",
                 msg: dict = {}, 
                 attach: list = [],
                 login_dir: str = None,
-                ID = None, PW = None):
+                ID = None, 
+                ):
         """
         Args:
             from_addr: list of sender address
@@ -36,9 +37,9 @@ class MailSend(object):
                 self.users = json.load(f)
                 self.PW = self.users[self.ID]
         else:
-            raise Exception
+            raise Exception("Log-In file not found: ", self.login_dir)
 
-    def __call__(self):
+    def send(self):
         """
         Args:
 
@@ -59,22 +60,31 @@ class MailSend(object):
         if isinstance(self.message, dict):
             for key, val in self.message.items():
                 if isinstance(val, dict):
-                    msg.attach(MIMEText(str(key) + '-th results\n', 'plain'))
+                    if isinstance(key, int):
+                        msg.attach(MIMEText(str(key) + '-th results\n', 'plain'))
+                    elif isinstance(key, str):
+                        msg.attach(MIMEText(key + '\n', 'plain'))
+                    else:
+                        raise NotImplementedError   
                     for skey, sval in val.items():
                         msg.attach(MIMEText('\t' + skey + " : " + sval + '\n', 'plain'))
                 elif isinstance(val, str):
                     msg.attach(MIMEText(val + '\n', 'plain'))
         elif isinstance(self.message, str):
             msg.attach(MIMEText(self.message, 'plain'))
+        else:
+            raise NotImplementedError
 
         smtp.sendmail(self.from_addr, self.to_addr, msg.as_string())
 
         smtp.quit()
-        print("Sended Mail to {}".format(self.to_addr))
+        print("Sent e-mail to '{}'".format(self.to_addr[-1]))
 
     def append_msg(self, msg):
         if isinstance(msg, list):
             self.message.append(msg)
+        elif isinstance(msg, dict):
+            self.message.update(msg)
         else:
             self.message.append(str(msg))
 
@@ -92,7 +102,11 @@ if __name__ == "__main__":
     
     sample_dict = {   1 : {"F1" : "[0.1, 0.9]",
                          "IoU" : "[0.5, 0.4]"},
-                    "sub" : "sub"
+                    "sub-a" : "sub"
+                    }
+    sample_dict_2 = {   2 : {"F1" : "[0.1, 0.9]",
+                         "IoU" : "[0.5, 0.4]"},
+                    "sub-b" : "sub"
                     }
     sample_str = '''
                     Fri Apr 29 15:13:19 2022
@@ -147,10 +161,16 @@ if __name__ == "__main__":
                     |    4   N/A  N/A    721505      C   python                          20951MiB |
                     +-----------------------------------------------------------------------------+
     '''
+    MailSend(from_addr=['singkuserver@gmail.com'],
+                    to_addr=['sdimivy014@korea.ac.kr'],
+                    msg=sample_dict,
+                    login_dir='/data1/sdi/login.json',
+                    ID='singkuserver').send()
 
     ms = MailSend(from_addr=['singkuserver@gmail.com'],
                     to_addr=['sdimivy014@korea.ac.kr'],
-                    msg=sample_str,
+                    msg=sample_dict,
                     login_dir='/data1/sdi/login.json',
                     ID='singkuserver')
-    ms()
+    ms.append_msg(sample_dict_2)
+    ms.send()

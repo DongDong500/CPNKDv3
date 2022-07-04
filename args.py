@@ -1,9 +1,11 @@
 import os
 import socket
 import argparse
-import network
 from datetime import datetime
+
+import network
 import datasets
+import utils
 
 HOSTNAME = {
     "server2" : 2,
@@ -159,14 +161,15 @@ def _get_argparser():
 
     # Outcome options
     parser.add_argument("--save_model", action='store_true', default=False,
-                        help="save best model param to \"./best_param\" (default: False)")
+                        help="save best model param to \"./best-param\" (default: False)")
     parser.add_argument("--best_ckpt", type=str, default=None,
-                        help="save best model param to \"./best_param\"")
+                        help="save best model param to \"./best-param\"")
     
     # Run Demo
     parser.add_argument("--run_demo", action='store_true', default=False)
 
     return parser
+
 
 def get_argparser():
 
@@ -175,33 +178,61 @@ def get_argparser():
 
         save_folder = os.path.dirname( os.path.abspath(__file__) ).split('/')[-1] + '-result'
 
-        parser.default_prefix = DEFAULT_PREFIX[socket.gethostname()]
+        parser.default_prefix = os.path.join(DEFAULT_PREFIX[socket.gethostname()], save_folder)
         parser.data_root = DATA_DIR[socket.gethostname()]
         parser.current_time = datetime.now().strftime('%b%d_%H-%M-%S') + ('_demo' if parser.run_demo else '')
         parser.login_dir = LOGIN[socket.gethostname()]
         parser.cur_work_server = socket.gethostname()
 
+        if not os.path.exists(parser.login_dir):
+            raise FileNotFoundError ("Log-In file not found or corrupted. " +
+                                     parser.login_dir)
+        if not os.path.exists(parser.data_root):
+            raise RuntimeError('Dataset root directory not found or corrupted. \n' +
+                               parser.data_root) 
+
         _dir = os.path.join(DEFAULT_PREFIX[socket.gethostname()], save_folder, parser.current_time)
         if not os.path.exists(_dir):
             os.makedirs(_dir)
+
         if parser.save_Tlog:
             parser.Tlog_dir = os.path.join(_dir, 'log')
             os.mkdir(parser.Tlog_dir)
+
         if parser.save_val_results:
             parser.val_results_dir = os.path.join(_dir, 'val')
             os.mkdir(parser.val_results_dir)
+
         if parser.save_test_results:
             parser.test_results_dir = os.path.join(_dir, 'test')
             os.mkdir(parser.test_results_dir)
+
         if parser.save_model:
             parser.best_ckpt = os.path.join(_dir, 'best-param')
+            os.mkdir(parser.best_ckpt)
+        else:
+            parser.best_ckpt = os.path.join(_dir, 'cache-param')
             os.mkdir(parser.best_ckpt)
         
         return parser
     else:
         raise NotImplementedError ("Host name not matched: ", socket.gethostname())
 
+
+def save_argparser(parser, save_dir) -> dict:
+
+    jsummary = {}
+    for key, val in vars(parser).items():
+        jsummary[key] = val
+
+    utils.save_dict_to_json(jsummary, os.path.join(save_dir, 'summary.json'))
+
+    return jsummary
+
+
+
 if __name__ == "__main__":
+
     import utils
 
     print('basename:    ', os.path.basename(__file__)) # main.py

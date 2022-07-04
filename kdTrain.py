@@ -56,43 +56,6 @@ def get_dataset(opts, kftimes):
     
     return train_dst, val_dst
 
-
-def build_log(opts, LOGDIR):
-
-    # Tensorboard option
-    if opts.save_log:
-        logdir = os.path.join(LOGDIR, 'log')
-        if not os.path.exists(logdir):
-            os.makedirs(logdir, exist_ok=True)
-
-    # Validate option
-    if opts.val_results:
-        logdir = os.path.join(LOGDIR, 'val_results')
-        if not os.path.exists(logdir):
-            os.mkdir(logdir)
-        opts.val_results_dir = logdir
-
-    # Save best model option
-    if opts.save_model:
-        logdir = os.path.join(LOGDIR, 'best_param')
-        if not os.path.exists(logdir):
-            os.mkdir(logdir)
-        opts.save_ckpt = logdir
-    else:
-        logdir = os.path.join(LOGDIR, 'cache_param')
-        if not os.path.exists(logdir):
-            os.mkdir(logdir)
-        opts.save_ckpt = logdir
-
-    # Save Options description
-    jsummary = {}
-    for key, val in vars(opts).items():
-        jsummary[key] = val
-    utils.save_dict_to_json(jsummary, os.path.join(LOGDIR, 'summary.json'))
-
-    print("Done: build log directory")
-
-
 def validate(opts, s_model, t_model, loader, device, metrics, epoch, criterion):
 
     metrics.reset()
@@ -152,8 +115,6 @@ def load_model(opts: ArgumentParser = None, model_name: str = '', msg: str = '',
     return model
     
 def train(opts, devices, LOGDIR) -> dict:
-
-    build_log(opts, LOGDIR)
 
     test_result = {}
 
