@@ -1,10 +1,27 @@
 from .cpn_all import CPNall
-from .cpn_six import CPN
+from .cpn import CPN
 from .cpn_aug import CPNaug
 from .cpn_cm import CPNcm
 from .median import Median
 from utils.ext_transforms import ExtCompose
 
+def cpn(root: str = '/', datatype:str = 'CPN_all', image_set:str = 'train', 
+                transform:ExtCompose = None, is_rgb:bool = True, kfold:int = 0, kftimes:int = 0):
+    """ -Peroneal nerve (all parts: fiber head (FH), fibular neuropathy (FN+0 ~ 15), POP+0 ~ 5)
+        490 samples
+        -Median nerve
+        1044 + 261 = 1305 samples
+    
+    Args:
+        root (str): path to data parent directory (Ex: /data1/sdi/datasets). 
+        datatype (str): data folder name (default: CPN_all).
+        image_set (str): train/val or test (default: train).
+        transform (ExtCompose): composition of transform class.
+        is_rgb (bool): 3 input channel for True else False.
+        kfold (int): k-fold cross validation
+        kftimes (int): current iteration of cv
+    """
+    return CPN(root, datatype, image_set, transform, is_rgb, kfold, kftimes)
 
 def cpn_all(root: str = '/', datatype:str = 'CPN_all', image_set:str = 'train', 
                 transform:ExtCompose = None, is_rgb:bool = True, kfold:int = 0, kftimes:int = 0):

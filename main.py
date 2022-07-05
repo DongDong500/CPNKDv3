@@ -1,8 +1,5 @@
 import os
-import json
 from datetime import datetime
-
-import torch
 
 from utils import MailSend
 from kdTrain import train
@@ -12,15 +9,10 @@ import utils
 
 if __name__ == '__main__':
 
-    opts = get_argparser()
-    
-    os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
-    os.environ['CUDA_VISIBLE_DEVICES'] = str(opts.gpus)
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print("Device: %s: %s" % (device, str(opts.gpus)))
-
     mlog = {}
+    opts = get_argparser()
     total_time = datetime.now()
+    
     try:
         opts.loss_type = 'kd_loss'
         opts.s_model = 'deeplabv3plus_resnet50'
@@ -33,26 +25,15 @@ if __name__ == '__main__':
 
         start_time = datetime.now()
 
-        #mlog['Single experimnet'] = train(devices=device, opts=opts)
-        
-        mlog['Single experimnet'] = {
-                                        'Model' : opts.s_model, 'Dataset' : opts.dataset,
-                                        'Policy' : opts.lr_policy, 'OS' : str(opts.output_stride),
-                                        'F1 [0]' : "{:.6f}".format(0.85260014), 'F1 [1]' : "{:.6f}".format(0.85260014)
-                                    }
+        mlog['Single experimnet'] = train(opts)
         params['Single experimnet'] = mlog['Single experimnet']
 
         time_elapsed = datetime.now() - start_time
 
         mlog['time elapsed'] = 'Time elapsed (h:m:s.ms) {}'.format(time_elapsed)
-        
-        with open(os.path.join(opts.default_prefix, opts.current_time, 'mlog.json'), "w") as f:
-            ''' JSON treats keys as strings
-            '''
-            json.dump(mlog, f, indent=4)
-        
         params["time_elpased"] = str(time_elapsed)
-
+        
+        utils.save_dict_to_json(d=mlog, json_path=os.path.join(opts.default_prefix, opts.current_time, 'mlog.json'))
         utils.save_dict_to_json(d=params, json_path=os.path.join(opts.default_prefix, opts.current_time, 'summary.json'))
  
         # Transfer results by G-mail
@@ -62,13 +43,13 @@ if __name__ == '__main__':
                     ID = 'singkuserver',
                     to_addr = ['sdimivy014@korea.ac.kr']).send()
 
-        os.remove(os.path.join(opts.default_prefix, opts.current_time, 'mlog.json'))
-
     except KeyboardInterrupt:
         print("Stop !!!")
+        os.rename(os.path.join(opts.default_prefix, opts.current_time), os.path.join(opts.default_prefix, opts.current_time + '_aborted'))
 
     except Exception as e:
         print("Error", e)
+        os.rename(os.path.join(opts.default_prefix, opts.current_time), os.path.join(opts.default_prefix, opts.current_time + '_error'))
 
     total_time = datetime.now() - total_time
 
