@@ -1,60 +1,45 @@
 import os
 import sys
 import torch.utils.data as data
-
 from PIL import Image
-
 
 class CPN(data.Dataset):
     """
     Args:6
         root (string): Root directory of the VOC Dataset.
         datatype (string): Dataset type 
-        image_set (string): Select the image_set to use, ``train`` or ``val``
+        image_set (string): Select the image_set to use, ``train``, ``val`` or ``test``
         transform (callable, optional): A function/transform that  takes in an PIL image
             and returns a transformed version. E.g, ``transforms.RandomCrop``
+        dver (str): version of dataset (ex) ``splits/v5/3``
+        kfold (int): k-fold cross validation
     """
 
-    def __init__(self, root, datatype='CPN', image_set='train', transform=None, is_rgb=True):
-        
-        is_aug = False
+    def __init__(self, root, datatype='CPN', dver='splits', 
+                    image_set='train', transform=None, is_rgb=True):
 
-        self.root = os.path.expanduser(root)
-        self.datafolder = datatype
-        self.image_set = image_set
         self.transform = transform
         self.is_rgb = is_rgb
 
-        cpn_root = os.path.join(self.root, datatype)
-        image_dir = os.path.join(cpn_root, 'Images')
-        mask_dir = os.path.join(cpn_root, 'Masks')
+        image_dir = os.path.join(root, 'CPN_all', 'Images')
+        mask_dir = os.path.join(root, 'CPN_all', 'Masks')
 
-        if not os.path.exists(cpn_root):
-            raise RuntimeError('Dataset not found or corrupted.' +
-                               ' You can use download=True to download it')
+        if not os.path.exists(image_dir) or not os.path.exists(mask_dir):
+            raise Exception('Dataset not found or corrupted.')
         
-        if is_aug and image_set=='train':
-            raise NotImplementedError
-        else:
-            splits_dir = os.path.join(cpn_root, 'splits')
-            split_f = os.path.join(splits_dir, image_set.rstrip('\n') + '.txt')
-
-        if not os.path.exists(splits_dir):
-            split_dataset(splits_dir=splits_dir, data_dir=image_dir)
-
+        split_f = os.path.join(root, 'CPN_all', dver, image_set.rstrip('\n') + '.txt')
+        
         if not os.path.exists(split_f):
-            raise ValueError('Wrong image_set entered!' 
-                             'Please use image_set="train" or image_set="val"')
+            raise Exception('Wrong image_set entered!' 
+                            'Please use image_set="train" or image_set="val"', split_f)
 
         with open(os.path.join(split_f), "r") as f:
             file_names = [x.strip() for x in f.readlines()]
-        if datatype == 'CPN_c':
-            self.images = [os.path.join(image_dir, x + ".jpg") for x in file_names]
-            self.masks = [os.path.join(mask_dir, x + ".jpg") for x in file_names]
-        else:
-            self.images = [os.path.join(image_dir, x + ".bmp") for x in file_names]
-            self.masks = [os.path.join(mask_dir, x + "_mask.bmp") for x in file_names]
-        assert (len(self.images) == len(self.masks))
+
+        self.images = [os.path.join(image_dir, x + ".bmp") for x in file_names]
+        self.masks = [os.path.join(mask_dir, x + "_mask.bmp") for x in file_names]
+        
+        assert (len(self.images) == len(self.masks))   
 
     def __getitem__(self, index):
         """
@@ -80,14 +65,9 @@ class CPN(data.Dataset):
 
         return img, target
 
-
     def __len__(self):
         return len(self.images)
 
-    @classmethod
-    def decode_target(cls, mask):
-        """decode semantic mask to RGB image"""
-        return cls.cmap[mask]
 
 if __name__ == "__main__":
 
@@ -96,7 +76,6 @@ if __name__ == "__main__":
     from utils import ext_transforms as et
     from torch.utils.data import DataLoader
     from tqdm import tqdm
-    from splits import split_dataset
 
     transform = et.ExtCompose([
             et.ExtRandomCrop(size=(512, 512), pad_if_needed=True),
@@ -105,8 +84,8 @@ if __name__ == "__main__":
             et.ExtNormalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
     
-    dst = CPNSegmentation(root='/data/sdi/datasets', datatype='CPN', image_set='train',
-                                transform=transform, is_rgb=True)
+    dst = CPN(root='/data1/sdi/datasets', datatype='CPN', image_set='test',
+                    transform=transform, is_rgb=True, dver='splits/v5/3')
     train_loader = DataLoader(dst, batch_size=16,
                                 shuffle=True, num_workers=2, drop_last=True)
     

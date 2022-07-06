@@ -56,8 +56,7 @@ def _get_argparser():
     # Model options
     available_models = sorted(name for name in network.model.__dict__ if name.islower() and \
                               not (name.startswith("__") or name.startswith('_')) and callable(
-                              network.model.__dict__[name])
-                             )
+                              network.model.__dict__[name]) )
     parser.add_argument("--t_model", type=str, default='unet_rgb', choices=available_models,
                         help='model name (default: Unet RGB)')
     parser.add_argument("--s_model", type=str, default='unet_rgb', choices=available_models,
@@ -82,16 +81,17 @@ def _get_argparser():
     # Dataset options
     parser.add_argument("--num_workers", type=int, default=12,
                         help="number of workers (default: 12)")
-    available_datasets = sorted( name for name in datasets.getdata.__dict__ if  callable(datasets.getdata.__dict__[name]) 
-                                )                    
+    available_datasets = sorted( name for name in datasets.getdata.__dict__ if  callable(datasets.getdata.__dict__[name]) )
     parser.add_argument("--dataset", type=str, default="CPN_six", choices=available_datasets,
                         help='Name of dataset (default: CPN_six)')
     parser.add_argument("--num_classes", type=int, default=2,
                         help="number of classes (default: 2)")
     parser.add_argument("--is_rgb", action='store_false', default=True,
                         help="choose True: RGB, False: gray (default: True)")
-    parser.add_argument("--k_fold", type=int, default=5,
-                        help="K-fold cross validation (default: 5)")
+    parser.add_argument("--dataset_ver", type=str, default="splits/v5/3",
+                        help="version of dataset (default: splits/v5/3)")
+    parser.add_argument("--tvs", type=int, default=5,
+                        help="number of blocks to split train set (default: 5)")
 
     # Augmentation options
     parser.add_argument("--resize", default=(496, 468))
@@ -189,7 +189,7 @@ def get_argparser():
                                      parser.login_dir)
         if not os.path.exists(parser.data_root):
             raise RuntimeError('Dataset root directory not found or corrupted. \n' +
-                               parser.data_root) 
+                               parser.data_root)
 
         _dir = os.path.join(DEFAULT_PREFIX[socket.gethostname()], save_folder, parser.current_time)
         if not os.path.exists(_dir):

@@ -260,6 +260,18 @@ def train(opts) -> dict:
     np.random.seed(opts.random_seed)
     random.seed(opts.random_seed)
 
+    ds_opts = {
+        "root" : "/",
+        "datatype" : "CPN_all",
+        "image_set" : "train",
+        "is_rgb" : opts.is_rgb,
+        "run_id" : 0,
+        "block" : "cv5",
+        "block_ver" : 4,
+        "cv" : 2,
+        "cv_itr" : 0
+    }
+
     test_result = {}
     for exp_itr in range(0, opts.exp_itr):        
         for kftimes in range(0, opts.k_fold):
