@@ -4,6 +4,9 @@ import numpy as np
 import torch
 import os
 
+LINE_UP = '\033[1A'
+LINE_CLEAR = '\x1b[2K'
+
 class EarlyStopping:
     """주어진 patience 이후로 validation loss가 개선되지 않으면 학습을 조기 중지"""
     def __init__(self, patience:int = 7, verbose:bool = False, delta:int = 0, 
@@ -40,6 +43,7 @@ class EarlyStopping:
         elif score < self.best_score + self.delta:
             self.counter += 1
             print(f'\nEarlyStopping counter: {self.counter} out of {self.patience}')
+            print(LINE_UP, end=LINE_CLEAR)
             if self.counter >= self.patience:
                 self.early_stop = True
             return False
@@ -52,9 +56,11 @@ class EarlyStopping:
     def save_checkpoint(self, val_loss, model, optim, scheduler, cur_itrs):
         '''validation loss가 감소하면 모델을 저장한다.'''
         if self.verbose:
-            print(f'\nValidation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).')
+            print(f'Validation loss decreased ({self.val_loss_min:.4f} --> {val_loss:.4f})')
+            print(LINE_UP, end=LINE_CLEAR)
         if self.save_model:
-            print('Saving model ... \n {}'.format(self.path))
+            print(f'Saving model: {self.path}')
+            print(LINE_UP, end=LINE_CLEAR)
             torch.save({
                 'model_state' : model.state_dict(),
                 'optimizer_state' : optim.state_dict(),
@@ -62,7 +68,8 @@ class EarlyStopping:
                 'cur_itrs' : cur_itrs,
             }, os.path.join(self.path, 'checkpoint.pt'))
         else:
-            print('Saving Cache model ... \n {}'.format(self.path))
+            print(f'Saving Cache model: {self.path}')
+            print(LINE_UP, end=LINE_CLEAR)
             torch.save({
                 'model_state' : model.state_dict(),
                 'optimizer_state' : optim.state_dict(),

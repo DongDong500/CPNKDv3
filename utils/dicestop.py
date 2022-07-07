@@ -2,15 +2,18 @@ import numpy as np
 import torch
 import os
 
+LINE_UP = '\033[1A'
+LINE_CLEAR = '\x1b[2K'
+
 class DiceStopping:
-    """주어진 patience 이후로 validation loss가 개선되지 않으면 학습을 조기 중지"""
+    """주어진 patience 이후로 Dice score가 개선되지 않으면 학습을 조기 중지"""
     def __init__(self, patience:int = 7, verbose:bool = False, delta:int = 0, 
-                    path:str = 'checkpoint.pt', save_model:bool = False):
+                    path:str = 'dicecheckpoint.pt', save_model:bool = False):
         """
         Args:
-            patience (int): validation loss가 개선된 후 기다리는 기간
+            patience (int): Dice score가 개선된 후 기다리는 기간
                             Default: 7
-            verbose (bool): True일 경우 각 validation loss의 개선 사항 메세지 출력
+            verbose (bool): True일 경우 각 Dice score의 개선 사항 메세지 출력
                             Default: False
             delta (float): 개선되었다고 인정되는 monitered quantity의 최소 변화
                             Default: 0
@@ -22,37 +25,43 @@ class DiceStopping:
         self.counter = 0
         self.best_score = None
         self.early_stop = False
-        self.val_loss_min = np.Inf
+        self.dice_max = 0
         self.delta = delta
         self.path = path
         self.save_model = save_model
 
-    def __call__(self, val_loss, model, optim, scheduler, cur_itrs):
+    def __call__(self, dice, model, optim, scheduler, cur_itrs):
 
-        score = -val_loss
+        score = dice
 
         if self.best_score is None:
             self.best_score = score
-            self.save_checkpoint(val_loss, model, optim, scheduler, cur_itrs)
+            self.save_checkpoint(dice, model, optim, scheduler, cur_itrs)
             return True
-        elif score < self.best_score + self.delta:
+        elif score < self.best_score - self.delta:
             self.counter += 1
-            print(f'DiceStopping counter: {self.counter} out of {self.patience}\n')
+            print(f'DiceStopping counter: {self.counter} out of {self.patience}')
+            print(LINE_UP, end=LINE_CLEAR)
             if self.counter >= self.patience:
                 self.early_stop = True
             return False
         else:
             self.best_score = score
-            self.save_checkpoint(val_loss, model, optim, scheduler, cur_itrs)
+            self.save_checkpoint(dice, model, optim, scheduler, cur_itrs)
             self.counter = 0
             return True
 
-    def save_checkpoint(self, val_loss, model, optim, scheduler, cur_itrs):
-        '''validation -F1 score 가 감소하면 모델을 저장한다.'''
+    def save_checkpoint(self, dice, model, optim, scheduler, cur_itrs):
+        '''Dice score 가 감소하면 모델을 저장한다.'''
         if self.verbose:
-            print(f'Negative Dice score decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).')
+            print(f'Dice score increased ({self.dice_max:.4f} --> {dice:.4f})')
+            print(LINE_UP, end=LINE_CLEAR)
+        
+        self.dice_max = dice
+
         if self.save_model:
-            print('Saving model ... \n {}\n'.format(self.path))
+            print(f'Saving model: {self.path}')
+            print(LINE_UP, end=LINE_CLEAR)
             torch.save({
                 'model_state' : model.state_dict(),
                 'optimizer_state' : optim.state_dict(),
@@ -60,11 +69,12 @@ class DiceStopping:
                 'cur_itrs' : cur_itrs,
             }, os.path.join(self.path, 'dicecheckpoint.pt'))
         else:
-            print('Saving Cache model ... \n {}\n'.format(self.path))
+            print(f'Saving Cache model: {self.path}')
+            print(LINE_UP, end=LINE_CLEAR)
             torch.save({
                 'model_state' : model.state_dict(),
                 'optimizer_state' : optim.state_dict(),
                 'scheduler_state' : scheduler.state_dict(),
                 'cur_itrs' : cur_itrs,
             }, os.path.join(self.path, 'dicecheckpoint.pt'))
-        self.val_loss_min = val_loss
+        

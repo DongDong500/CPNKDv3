@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 def _validate(opts, s_model, t_model, loader, device, metrics, epoch, criterion):
-    
+    s_model.eval()
     metrics.reset()
 
     running_loss = 0.0

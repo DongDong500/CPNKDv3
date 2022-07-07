@@ -85,20 +85,20 @@ def _train(opts, devices, run_id) -> dict:
 
     ### (5) Resume student model & scheduler
 
-    if opts.ckpt is not None and os.path.isfile(opts.ckpt):
+    if opts.resume_ckpt is not None and os.path.isfile(opts.resume_ckpt):
         if torch.cuda.device_count() > 1:
             s_model = nn.DataParallel(s_model)
-        checkpoint = torch.load(opts.ckpt, map_location=torch.device('cpu'))
+        checkpoint = torch.load(opts.resume_ckpt, map_location=torch.device('cpu'))
         s_model.load_state_dict(checkpoint["model_state"])
         s_model.to(devices)
         if opts.continue_training:
             optimizer.load_state_dict(checkpoint["optimizer_state"])
             scheduler.load_state_dict(checkpoint["scheduler_state"])
             resume_epoch = checkpoint["cur_itrs"]
-            print("Training state restored from %s" % opts.ckpt)
+            print("Training state restored from %s" % opts.resume_ckpt)
         else:
             resume_epoch = 0
-        print("Model restored from %s" % opts.ckpt)
+        print("Model restored from %s" % opts.resume_ckpt)
         del checkpoint  # free memory
         torch.cuda.empty_cache()
     else:
@@ -112,15 +112,14 @@ def _train(opts, devices, run_id) -> dict:
 
     metrics = StreamSegMetrics(opts.num_classes)
     early_stopping = utils.EarlyStopping(patience=opts.patience, verbose=True, delta=opts.delta,
-                                            path=opts.save_ckpt, save_model=opts.save_model)
-    dice_stopping = utils.DiceStopping(patience=opts.patience, verbose=True, delta=opts.delta,
-                                            path=opts.save_ckpt, save_model=opts.save_model)
-    best_score = 0.0
+                                            path=opts.best_ckpt, save_model=opts.save_model)
+    dice_stopping = utils.DiceStopping(patience=opts.patience, verbose=True, delta=0.0001,
+                                            path=opts.best_ckpt, save_model=opts.save_model)
 
     ### (7) Train
 
     B_epoch = 0
-    B_test_score = None
+    B_test_score = {}
 
     for epoch in range(resume_epoch, opts.total_itrs):
         s_model.train()
@@ -157,8 +156,109 @@ def _train(opts, devices, run_id) -> dict:
         print("\tF1 [0]: {:.5f} [1]: {:.5f}".format(score['Class F1'][0], score['Class F1'][1]))
         print("\tIoU[0]: {:.5f} [1]: {:.5f}".format(score['Class IoU'][0], score['Class IoU'][1]))
         print("\tOverall Acc: {:.3f}, Mean Acc: {:.3f}".format(score['Overall Acc'], score['Mean Acc']))
+
         print(LINE_UP, end=LINE_CLEAR)
         print(LINE_UP, end=LINE_CLEAR)
         print(LINE_UP, end=LINE_CLEAR)
         print(LINE_UP, end=LINE_CLEAR)
+
+        if opts.save_Tlog:
+            writer.add_scalar('IoU BG/train', score['Class IoU'][0], epoch)
+            writer.add_scalar('IoU Nerve/train', score['Class IoU'][1], epoch)
+            writer.add_scalar('Dice BG/train', score['Class F1'][0], epoch)
+            writer.add_scalar('Dice Nerve/train', score['Class F1'][1], epoch)
+            writer.add_scalar('epoch loss/train', epoch_loss, epoch)
+        
+        if (epoch + 1) % opts.val_interval == 0:
+            val_score, val_loss = _validate(opts, s_model, t_model, val_loader, 
+                                            devices, metrics, epoch, criterion)
+
+            print("[{}] Epoch: {}/{} Loss: {:.5f}".format('Val', epoch+1, opts.total_itrs, val_loss))
+            print("\tF1 [0]: {:.5f} [1]: {:.5f}".format(val_score['Class F1'][0], val_score['Class F1'][1]))
+            print("\tIoU[0]: {:.5f} [1]: {:.5f}".format(val_score['Class IoU'][0], val_score['Class IoU'][1]))
+            print("\tOverall Acc: {:.3f}, Mean Acc: {:.3f}".format(val_score['Overall Acc'], val_score['Mean Acc']))
+
+            print(LINE_UP, end=LINE_CLEAR)
+            print(LINE_UP, end=LINE_CLEAR)
+            print(LINE_UP, end=LINE_CLEAR)
+            print(LINE_UP, end=LINE_CLEAR)
+            
+            early_stopping(val_loss, s_model, optimizer, scheduler, epoch)
+
+            if opts.save_Tlog:
+                writer.add_scalar('IoU BG/val', val_score['Class IoU'][0], epoch)
+                writer.add_scalar('IoU Nerve/val', val_score['Class IoU'][1], epoch)
+                writer.add_scalar('Dice BG/val', val_score['Class F1'][0], epoch)
+                writer.add_scalar('Dice Nerve/val', val_score['Class F1'][1], epoch)
+                writer.add_scalar('epoch loss/val', val_loss, epoch)
+        
+        if (epoch + 1) % opts.test_interval == 0:
+            test_score, test_loss = _validate(opts, s_model, t_model, test_loader, 
+                                            devices, metrics, epoch, criterion)
+
+            print("[{}] Epoch: {}/{} Loss: {:.5f}".format('Test', epoch+1, opts.total_itrs, test_loss))
+            print("\tF1 [0]: {:.5f} [1]: {:.5f}".format(test_score['Class F1'][0], test_score['Class F1'][1]))
+            print("\tIoU[0]: {:.5f} [1]: {:.5f}".format(test_score['Class IoU'][0], test_score['Class IoU'][1]))
+            print("\tOverall Acc: {:.3f}, Mean Acc: {:.3f}".format(test_score['Overall Acc'], test_score['Mean Acc']))
+
+            print(LINE_UP, end=LINE_CLEAR)
+            print(LINE_UP, end=LINE_CLEAR)
+            print(LINE_UP, end=LINE_CLEAR)
+            print(LINE_UP, end=LINE_CLEAR)
+
+            if dice_stopping(test_score['Class F1'][1], s_model, optimizer, scheduler, epoch):
+                B_epoch = epoch
+                B_test_score = test_score
+            
+            if opts.save_Tlog:
+                writer.add_scalar('IoU BG/val', test_score['Class IoU'][0], epoch)
+                writer.add_scalar('IoU Nerve/val', test_score['Class IoU'][1], epoch)
+                writer.add_scalar('Dice BG/val', test_score['Class F1'][0], epoch)
+                writer.add_scalar('Dice Nerve/val', test_score['Class F1'][1], epoch)
+                writer.add_scalar('epoch loss/val', test_loss, epoch)
+        
+        if early_stopping.early_stop:
+            print("Early Stop !!!")
+            break
+        
+        if opts.runs_demo and epoch > 5:
+            print("Run demo !!!")
+            break
+    
+    if opts.save_test_results:
+        params = utils.Params(json_path=os.path.join(opts.default_prefix, opts.current_time, 'summary.json')).dict
+        for k, v in B_test_score.items():
+            params[k] = v
+        utils.save_dict_to_json(d=params, json_path=os.path.join(opts.default_prefix, opts.current_time, 'summary.json'))
+
+        if opts.save_model:
+            if opts.save_model:
+                checkpoint = torch.load(os.path.join(opts.best_ckpt, 'dicecheckpoint.pt'), map_location=devices)
+            s_model.load_state_dict(checkpoint["model_state"])
+            sdir = os.path.join(opts.test_results_dir, 'epoch_{}'.format(B_epoch))
+            utils.save(sdir, s_model, test_loader, devices, opts.is_rgb)
+            del checkpoint
+            del s_model
+            torch.cuda.empty_cache()
+        else:
+            checkpoint = torch.load(os.path.join(opts.best_ckpt, 'dicecheckpoint.pt'), map_location=devices)
+            s_model.load_state_dict(checkpoint["model_state"])
+            sdir = os.path.join(opts.test_results_dir, 'epoch_{}'.format(B_epoch))
+            utils.save(sdir, s_model, test_loader, devices, opts.is_rgb)
+            del checkpoint
+            del s_model
+            torch.cuda.empty_cache()
+            if os.path.exists(os.path.join(opts.best_ckpt, 'checkpoint.pt')):
+                os.remove(os.path.join(opts.best_ckpt, 'checkpoint.pt'))
+            if os.path.exists(os.path.join(opts.best_ckpt, 'dicecheckpoint.pt')):
+                os.remove(os.path.join(opts.best_ckpt, 'dicecheckpoint.pt'))
+            os.rmdir(os.path.join(opts.best_ckpt))
+
+    return {
+                'Model' : opts.s_model, 'Dataset' : opts.dataset,
+                'Policy' : opts.lr_policy, 'OS' : str(opts.output_stride), 'Epoch' : str(B_epoch),
+                'F1 [0]' : B_test_score['Class F1'][0], 'F1 [1]' : B_test_score['Class F1'][1]
+            }
+
+
         
