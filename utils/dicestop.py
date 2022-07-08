@@ -41,7 +41,6 @@ class DiceStopping:
         elif score < self.best_score - self.delta:
             self.counter += 1
             print(f'DiceStopping counter: {self.counter} out of {self.patience}')
-            print(LINE_UP, end=LINE_CLEAR)
             if self.counter >= self.patience:
                 self.early_stop = True
             return False
@@ -55,13 +54,10 @@ class DiceStopping:
         '''Dice score 가 감소하면 모델을 저장한다.'''
         if self.verbose:
             print(f'Dice score increased ({self.dice_max:.4f} --> {dice:.4f})')
-            print(LINE_UP, end=LINE_CLEAR)
         
         self.dice_max = dice
 
         if self.save_model:
-            print(f'Saving model: {self.path}')
-            print(LINE_UP, end=LINE_CLEAR)
             torch.save({
                 'model_state' : model.state_dict(),
                 'optimizer_state' : optim.state_dict(),
@@ -69,8 +65,6 @@ class DiceStopping:
                 'cur_itrs' : cur_itrs,
             }, os.path.join(self.path, 'dicecheckpoint.pt'))
         else:
-            print(f'Saving Cache model: {self.path}')
-            print(LINE_UP, end=LINE_CLEAR)
             torch.save({
                 'model_state' : model.state_dict(),
                 'optimizer_state' : optim.state_dict(),

@@ -151,15 +151,14 @@ def _train(opts, devices, run_id) -> dict:
         score = metrics.get_results()
         epoch_loss = running_loss / len(train_loader.dataset)
 
+        if epoch > 0:
+            for i in range(14):
+                print(LINE_UP, end=LINE_CLEAR)
+
         print("[{}] Epoch: {}/{} Loss: {:.5f}".format('Train', epoch+1, opts.total_itrs, epoch_loss))
         print("\tF1 [0]: {:.5f} [1]: {:.5f}".format(score['Class F1'][0], score['Class F1'][1]))
         print("\tIoU[0]: {:.5f} [1]: {:.5f}".format(score['Class IoU'][0], score['Class IoU'][1]))
         print("\tOverall Acc: {:.3f}, Mean Acc: {:.3f}".format(score['Overall Acc'], score['Mean Acc']))
-
-        print(LINE_UP, end=LINE_CLEAR)
-        print(LINE_UP, end=LINE_CLEAR)
-        print(LINE_UP, end=LINE_CLEAR)
-        print(LINE_UP, end=LINE_CLEAR)
 
         if opts.save_Tlog:
             writer.add_scalar('IoU BG/train', score['Class IoU'][0], epoch)
@@ -171,16 +170,10 @@ def _train(opts, devices, run_id) -> dict:
         if (epoch + 1) % opts.val_interval == 0:
             val_score, val_loss = _validate(opts, s_model, t_model, val_loader, 
                                             devices, metrics, epoch, criterion)
-
             print("[{}] Epoch: {}/{} Loss: {:.5f}".format('Val', epoch+1, opts.total_itrs, val_loss))
             print("\tF1 [0]: {:.5f} [1]: {:.5f}".format(val_score['Class F1'][0], val_score['Class F1'][1]))
             print("\tIoU[0]: {:.5f} [1]: {:.5f}".format(val_score['Class IoU'][0], val_score['Class IoU'][1]))
             print("\tOverall Acc: {:.3f}, Mean Acc: {:.3f}".format(val_score['Overall Acc'], val_score['Mean Acc']))
-
-            print(LINE_UP, end=LINE_CLEAR)
-            print(LINE_UP, end=LINE_CLEAR)
-            print(LINE_UP, end=LINE_CLEAR)
-            print(LINE_UP, end=LINE_CLEAR)
             
             early_stopping(val_loss, s_model, optimizer, scheduler, epoch)
 
@@ -200,27 +193,22 @@ def _train(opts, devices, run_id) -> dict:
             print("\tIoU[0]: {:.5f} [1]: {:.5f}".format(test_score['Class IoU'][0], test_score['Class IoU'][1]))
             print("\tOverall Acc: {:.3f}, Mean Acc: {:.3f}".format(test_score['Overall Acc'], test_score['Mean Acc']))
 
-            print(LINE_UP, end=LINE_CLEAR)
-            print(LINE_UP, end=LINE_CLEAR)
-            print(LINE_UP, end=LINE_CLEAR)
-            print(LINE_UP, end=LINE_CLEAR)
-
             if dice_stopping(test_score['Class F1'][1], s_model, optimizer, scheduler, epoch):
                 B_epoch = epoch
                 B_test_score = test_score
             
             if opts.save_Tlog:
-                writer.add_scalar('IoU BG/val', test_score['Class IoU'][0], epoch)
-                writer.add_scalar('IoU Nerve/val', test_score['Class IoU'][1], epoch)
-                writer.add_scalar('Dice BG/val', test_score['Class F1'][0], epoch)
-                writer.add_scalar('Dice Nerve/val', test_score['Class F1'][1], epoch)
-                writer.add_scalar('epoch loss/val', test_loss, epoch)
+                writer.add_scalar('IoU BG/test', test_score['Class IoU'][0], epoch)
+                writer.add_scalar('IoU Nerve/test', test_score['Class IoU'][1], epoch)
+                writer.add_scalar('Dice BG/test', test_score['Class F1'][0], epoch)
+                writer.add_scalar('Dice Nerve/test', test_score['Class F1'][1], epoch)
+                writer.add_scalar('epoch loss/test', test_loss, epoch)
         
         if early_stopping.early_stop:
             print("Early Stop !!!")
             break
         
-        if opts.runs_demo and epoch > 5:
+        if opts.run_demo and epoch > 5:
             print("Run demo !!!")
             break
     

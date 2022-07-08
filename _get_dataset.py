@@ -13,7 +13,8 @@ def _get_dataset(opts):
         et.ExtScale(scale=opts.scale_factor),
         et.ExtRandomVerticalFlip(),
         et.ExtToTensor(),
-        et.ExtNormalize(mean=mean, std=std)
+        et.ExtNormalize(mean=mean, std=std),
+        et.GaussianPerturb(mean=0, std=opts.std)
         ])
     val_transform = et.ExtCompose([
         et.ExtResize(size=opts.resize),
@@ -23,7 +24,6 @@ def _get_dataset(opts):
         et.ExtNormalize(mean=mean, std=std),
         ])
     test_transform = et.ExtCompose([
-        et.ExtResize(size=opts.resize),
         et.ExtRandomCrop(size=opts.val_crop_size, pad_if_needed=True),
         et.ExtScale(scale=opts.scale_factor),
         et.ExtToTensor(),
@@ -42,7 +42,7 @@ def _get_dataset(opts):
                                                     datatype=opts.dataset, 
                                                     dver=opts.dataset_ver, 
                                                     image_set='val', 
-                                                    transform=train_transform, 
+                                                    transform=val_transform, 
                                                     is_rgb=opts.is_rgb, 
                                                     tvs=opts.tvs)
 
@@ -50,7 +50,7 @@ def _get_dataset(opts):
                                                     datatype=opts.dataset, 
                                                     dver=opts.dataset_ver, 
                                                     image_set='test', 
-                                                    transform=train_transform, 
+                                                    transform=test_transform, 
                                                     is_rgb=opts.is_rgb, 
                                                     tvs=opts.tvs)
 

@@ -33,5 +33,5 @@ def train(opts) -> dict:
     f11 /= N
 
     return {
-        'F1 [0]' :f10, 'F1 [1]' : f11
+        'F1 [0]' : f'{f10:.4f}', 'F1 [1]' : f'{f11:.4f}'
     }

@@ -42,8 +42,7 @@ class EarlyStopping:
             return True
         elif score < self.best_score + self.delta:
             self.counter += 1
-            print(f'\nEarlyStopping counter: {self.counter} out of {self.patience}')
-            print(LINE_UP, end=LINE_CLEAR)
+            print(f'EarlyStopping counter: {self.counter} out of {self.patience}')
             if self.counter >= self.patience:
                 self.early_stop = True
             return False
@@ -57,10 +56,7 @@ class EarlyStopping:
         '''validation loss가 감소하면 모델을 저장한다.'''
         if self.verbose:
             print(f'Validation loss decreased ({self.val_loss_min:.4f} --> {val_loss:.4f})')
-            print(LINE_UP, end=LINE_CLEAR)
         if self.save_model:
-            print(f'Saving model: {self.path}')
-            print(LINE_UP, end=LINE_CLEAR)
             torch.save({
                 'model_state' : model.state_dict(),
                 'optimizer_state' : optim.state_dict(),
@@ -68,8 +64,6 @@ class EarlyStopping:
                 'cur_itrs' : cur_itrs,
             }, os.path.join(self.path, 'checkpoint.pt'))
         else:
-            print(f'Saving Cache model: {self.path}')
-            print(LINE_UP, end=LINE_CLEAR)
             torch.save({
                 'model_state' : model.state_dict(),
                 'optimizer_state' : optim.state_dict(),
