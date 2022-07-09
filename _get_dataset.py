@@ -17,13 +17,15 @@ def _get_dataset(opts):
         et.GaussianPerturb(mean=0, std=opts.std)
         ])
     val_transform = et.ExtCompose([
-        et.ExtResize(size=opts.resize),
+        et.ExtResize(size=opts.val_resize),
         et.ExtRandomCrop(size=opts.val_crop_size, pad_if_needed=True),
         et.ExtScale(scale=opts.scale_factor),
         et.ExtToTensor(),
         et.ExtNormalize(mean=mean, std=std),
+        et.GaussianPerturb(mean=0, std=opts.val_std)
         ])
     test_transform = et.ExtCompose([
+        et.ExtResize(size=opts.test_resize),
         et.ExtRandomCrop(size=opts.val_crop_size, pad_if_needed=True),
         et.ExtScale(scale=opts.scale_factor),
         et.ExtToTensor(),

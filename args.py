@@ -142,8 +142,8 @@ def _get_argparser():
                         help="epoch interval for eval (default: 1)")
     parser.add_argument("--val_batch_size", type=int, default=4,
                         help='batch size for validate (default: 4)')
-    parser.add_argument("--val_std", type=float, default=0.01,
-                        help="[val] sigma in gaussian perturbation (default: 0.01)")
+    parser.add_argument("--val_std", type=float, default=0,
+                        help="[val] sigma in gaussian perturbation (default: 0)")
     parser.add_argument("--save_val_results", action='store_true', default=False,
                         help='save validate segmentation results to \"./val\" (default: False)')
     parser.add_argument("--val_results_dir", type=str, default='/',

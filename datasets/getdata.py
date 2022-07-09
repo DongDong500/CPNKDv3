@@ -4,6 +4,7 @@ import math
 from random import sample
 
 from .cpn import CPN
+from .pmn import PMN
 from utils.ext_transforms import ExtCompose
 
 def mktv(root:str = '/', datatype:str = 'CPN', dver:str = 'splits', tvs:int = 5):
@@ -33,6 +34,30 @@ def cpn(root:str = '/', datatype:str = 'CPN', dver:str = 'splits',
     
     """ -Peroneal nerve (all parts: fiber head (FH), fibular neuropathy (FN+0 ~ 15), POP+0 ~ 5)
         490 samples
+    
+    Args:
+        root (str)  :   path to data parent directory (Ex: /data1/sdi/datasets) 
+        datatype (str)  :   data folder name (default: CPN_all)
+        dver (str)  : version of dataset (default: splits)
+        image_set (str) :    train/val or test (default: train)
+        transform (ExtCompose)  :   composition of transform class
+        is_rgb (bool)   :  True for RGB, False for gray scale images
+        tvs (int)   :  train/validate dataset ratio 
+                2 block = 1 mini-block train set, 1 mini-block validate set
+                5 block = 4 mini-block train set, 1 mini-block validate set
+    """
+    if tvs < 2:
+        raise Exception("tvs must be larger than 1")
+    elif image_set == 'train':
+        mktv(root, 'CPN_all', dver, tvs)
+
+    return PMN(root, 'CPN_all', dver, image_set, transform, is_rgb)
+
+def pmn(root:str = '/', datatype:str = 'PMN', dver:str = 'splits',
+            image_set:str = 'train', transform:ExtCompose = None, is_rgb:bool = True, tvs:int = 5):
+    
+    """ -Peroneal nerve (all parts: fiber head (FH), fibular neuropathy (FN+0 ~ 15), POP+0 ~ 5)
+        490 samples
         -Median nerve
         1044 + 261 = 1305 samples
     
@@ -51,8 +76,10 @@ def cpn(root:str = '/', datatype:str = 'CPN', dver:str = 'splits',
         raise Exception("tvs must be larger than 1")
     elif image_set == 'train':
         mktv(root, 'CPN_all', dver, tvs)
+        mktv(root, 'Median', 'splits',tvs)
 
-    return CPN(root, 'CPN_all', dver, image_set, transform, is_rgb)
+    return PMN(root, 'CPN_all', dver, image_set, transform, is_rgb)
+
 
 if __name__ == "__main__":
     print(os.path.dirname( os.path.dirname( os.path.abspath(__file__) ) ))
@@ -67,7 +94,7 @@ if __name__ == "__main__":
             et.ExtNormalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
 
-    dst = cpn(root='/data1/sdi/datasets', datatype='CPN_all', dver='splits/v5/3',
+    dst = pmn(root='/data1/sdi/datasets', datatype='CPN_all', dver='splits/v5/3',
                 image_set='train', transform=transform, is_rgb=True, tvs=2)
 
     loader = DataLoader(dst, batch_size=16,
