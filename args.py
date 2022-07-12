@@ -95,6 +95,8 @@ def _get_argparser():
 
     # Augmentation options
     parser.add_argument("--resize", default=(496, 468))
+    parser.add_argument("--val_resize", default=(496, 468))
+    parser.add_argument("--test_resize", default=(496, 468))
     parser.add_argument("--crop_size", default=(512, 448))
     parser.add_argument("--val_crop_size", default=(512, 448))
     parser.add_argument("--scale_factor", type=float, default=5e-1)
@@ -154,6 +156,8 @@ def _get_argparser():
                         help="epoch interval for test (default: 1)")
     parser.add_argument("--test_batch_size", type=int, default=4,
                         help='batch size for test (default: 4)')
+    parser.add_argument("--test_std", type=float, default=0,
+                        help="[test] sigma in gaussian perturbation (default: 0)")
     parser.add_argument("--save_test_results", action='store_true', default=False,
                         help='save test results to \"./test\" (default: False)')
     parser.add_argument("--test_results_dir", type=str, default='/',

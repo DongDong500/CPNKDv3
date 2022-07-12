@@ -51,7 +51,7 @@ def cpn(root:str = '/', datatype:str = 'CPN', dver:str = 'splits',
     elif image_set == 'train':
         mktv(root, 'CPN_all', dver, tvs)
 
-    return PMN(root, 'CPN_all', dver, image_set, transform, is_rgb)
+    return CPN(root, 'CPN_all', dver, image_set, transform, is_rgb)
 
 def pmn(root:str = '/', datatype:str = 'PMN', dver:str = 'splits',
             image_set:str = 'train', transform:ExtCompose = None, is_rgb:bool = True, tvs:int = 5):

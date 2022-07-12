@@ -30,6 +30,7 @@ def _get_dataset(opts):
         et.ExtScale(scale=opts.scale_factor),
         et.ExtToTensor(),
         et.ExtNormalize(mean=mean, std=std),
+        et.GaussianPerturb(mean=0, std=opts.test_std)
         ])
 
     train_dst = dt.getdata.__dict__[opts.dataset](root=opts.data_root, 
